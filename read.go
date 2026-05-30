@@ -19,46 +19,30 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/thumbrise/ouro/contract"
 	"github.com/thumbrise/ouro/reference/pkg/reflection"
 	stringsutil "github.com/thumbrise/ouro/reference/pkg/strings"
 )
 
 type Reader struct {
-	validator       Validator
-	loader          Loader
-	hookSuccessRead HookSuccessRead
+	validator       contract.Validator
+	loader          contract.Loader
+	hookSuccessRead contract.HookSuccessRead
 }
 
-func NewReader(hookSuccessLoad HookSuccessRead, loader Loader, validator Validator) *Reader {
+func NewReader(hookSuccessLoad contract.HookSuccessRead, loader contract.Loader, validator contract.Validator) *Reader {
 	return &Reader{hookSuccessRead: hookSuccessLoad, loader: loader, validator: validator}
 }
 
-type LoadContext struct {
-	key string
-	out any
-}
-type Loader interface {
-	Load(ctx context.Context, loadContext LoadContext) error
-}
-type ValidateContext struct {
-	key string
-	out any
-}
-type Validator interface {
-	Validate(ctx context.Context, validateContext ValidateContext) error
-}
-
-type HookSuccessRead func(ctx context.Context, loadContext LoadContext)
-
 func (c *Reader) Read(ctx context.Context, out interface{}, key string) error {
-	loadContext := LoadContext{key: key, out: out}
+	loadContext := contract.LoadContext{Key: key, Data: out}
 
 	err := c.loader.Load(ctx, loadContext)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrLoad, err)
 	}
 
-	err = c.validator.Validate(ctx, ValidateContext{key: key, out: out})
+	err = c.validator.Validate(ctx, contract.ValidateContext{Key: key, Data: out})
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrValidate, err)
 	}
